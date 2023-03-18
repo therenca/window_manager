@@ -12,23 +12,24 @@ Copy paste the code below to render a screen like this:<br/>
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:aqua/aqua.dart' as aqua;
+import 'package:window_manager/window_manager.dart' as wm;
 
 class Shell extends StatefulWidget {
-
+  const Shell({Key? key}) : super(key: key);
   @override
   ShellState createState() => ShellState();
 }
 
 class ShellState extends State<Shell>{
 
-  Widget selectedWidget;
-  aqua.NavigationStreamer mainNavStreamer;
-  StreamSubscription mainNavStreamSubscription;
+  Widget? selectedWidget;
+  late wm.NavigationStreamer mainNavStreamer;
+  late StreamSubscription mainNavStreamSubscription;
 
   @override
   void initState(){
     super.initState();
-    mainNavStreamer = aqua.NavigationStreamer();
+    mainNavStreamer = wm.NavigationStreamer();
 
     mainNavStreamSubscription = mainNavStreamer.listen((data){
       aqua.pretifyOutput('[SHELL] data from nav stream: $data');
@@ -48,71 +49,56 @@ class ShellState extends State<Shell>{
   Widget _buildShell(BuildContext context){
     Map<String, Map<String, dynamic>> generatedRoutes = _buildGeneratedRoutes();
 
-    var textStyle = TextStyle(
-      fontSize: 30.0,
-      color: Colors.white,
-      fontWeight: FontWeight.bold
-    );
-
-    Widget firstWidget = Container(
-      color: Colors.purple,
-      child: Center(
-        child: Text(
-          'Home',
-          style: textStyle
-        )
-      ),
-    );
-
     return Scaffold(
       appBar: null,
-      body: SingleChildScrollView(
-        child: Container(
-          child: Row(
-
-            children: [
-
-              Expanded(
-                child: aqua.Navigation(
-                  header: Container(
-                    width: navWidth,
-                    height: 100.0,
-                    color: Colors.red,
-                    child: Center(
-                      child: Text(
-                        'Header',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold
+      body: aqua.DynamicDimensions(
+        renderWidget: (double width, double height){
+          return SizedBox(
+            width: width,
+            height: height,
+            child: Row(
+              children: [
+                Expanded(
+                  child: wm.Navigation(
+                    header: Container(
+                      height: 100.0,
+                      color: Colors.red,
+                      child: const Center(
+                        child: Text(
+                          'Header',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold
+                          ),
                         ),
                       ),
                     ),
+                    routes: generatedRoutes,
+                    bgColors: const <Color>[
+                      Colors.blue,
+                      Colors.blueAccent
+                    ],
+                    hoverColor: Colors.brown.withOpacity(0.5),
+                    selectedColor: Colors.white.withOpacity(0.5),
+                    navStreamer: mainNavStreamer,
                   ),
-                  routes: generatedRoutes,
-                  bgColors: <Color>[
-                    Colors.blue,
-                    Colors.blueAccent
-                  ],
-                  hoverColor: Colors.brown.withOpacity(0.5),
-                  selectedColor: Colors.white.withOpacity(0.5),
-                  navStreamer: mainNavStreamer,
                 ),
-              ),
 
-              Expanded(
-                flex: 6,
-                child: selectedWidget == null ? aqua.requestFocus(
-                  firstWidget,
-                  context
-                ) : aqua.requestFocus(
-                  selectedWidget,
-                  context
-                )
-              ),
-            ]
-          )
-        ),
-      ),
+                Expanded(
+                  flex: 6,
+                  child: selectedWidget == null ? aqua.requestFocus(
+                    generatedRoutes['Home']!['window'],
+                    context
+                  ) : aqua.requestFocus(
+                    selectedWidget!,
+                    context
+                  )
+                ),
+              ]
+            ),
+          );
+        },
+      )
     );
   }
 
@@ -120,55 +106,55 @@ class ShellState extends State<Shell>{
   Widget build(BuildContext context) => _buildShell(context);
 
   Map<String, Map<String, dynamic>> _buildGeneratedRoutes(){
-
-    var textStyle = TextStyle(
-      fontSize: 30.0,
-      color: Colors.white,
-      fontWeight: FontWeight.bold
-    );
-
-    Function _buildIconHelper = (IconData iconData){
+    buildIconHelper (IconData iconData){
       return Icon(iconData, color: Colors.black, size: 15.0,);
-    };
+    }
+
+    buildWindow (String name, double width, double height, Color color){
+      return Container(
+        width: width,
+        height: height,
+        color: color,
+        child: Center(
+          child: Text(
+            name,
+            style: const TextStyle(
+              fontSize: 30.0,
+              color: Colors.white,
+              fontWeight: FontWeight.bold
+            ),
+          ),
+        ),
+      );
+    }
 
     return {
       'Home': {
-        'window': aqua.DynammicDimensions(
+        'window': aqua.DynamicDimensions(
           renderWidget: (double width, double height){
-            return Container(
-              width: width,
-              height: height,
-              color: Colors.purple
-            );
+            return buildWindow('Home', width, height, Colors.purple);
           }
         ),
-        'icon': _buildIconHelper(Icons.home)
+        'icon': buildIconHelper(Icons.home)
       },
       'Search': {
-        'window': aqua.DynammicDimensions(
+        'window': aqua.DynamicDimensions(
           renderWidget: (double width, double height){
-            return Container(
-              width: width,
-              height: height,
-              color: Colors.red
-            );
+            return buildWindow('Search', width, height, Colors.red);
           }
         ),
-        'icon': _buildIconHelper(Icons.search)
+        'icon': buildIconHelper(Icons.search)
       },
       'Settings': {
-        'window': aqua.DynammicDimensions(
+        'window': aqua.DynamicDimensions(
           renderWidget: (double width, double height){
-            return Container(
-              width: width,
-              height: height,
-              color: Colors.blue
-            );
+            return buildWindow('Settings', width, height, Colors.blue);
           }
-        ),,
-        'icon': _buildIconHelper(Icons.settings)
+        ),
+        'icon': buildIconHelper(Icons.settings)
       }
     };
   }
 }
+
 ```
